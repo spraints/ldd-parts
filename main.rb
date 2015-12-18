@@ -68,21 +68,19 @@ class DB
 
   def read_materials
     materials = Hash.new("unknown")
-    File.open "materials.loc", "wb" do |f|
-      state = :init
-      id = nil
-      read("/MaterialNames/EN/localizedStrings.loc").split("\0").each do |str|
+    state = :init
+    id = nil
+    read("/MaterialNames/EN/localizedStrings.loc").split("\0").each do |str|
 #        $stderr.puts [state, id, str].inspect
-        case state
-        when :init
-          state = :name
-        when :name
-          id = str.sub("Material", "")
-          state = :val
-        when :val
-          materials[id] = str
-          state = :name
-        end
+      case state
+      when :init
+        state = :name
+      when :name
+        id = str.sub("Material", "")
+        state = :val
+      when :val
+        materials[id] = str
+        state = :name
       end
     end
     materials
