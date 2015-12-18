@@ -1,5 +1,68 @@
+require "nokogiri"
+require "pp"
+require "zip"
+
 def main
-  ldd_db = read_ldd_db
+  db = DB.new
+  ARGV.each do |path|
+    list_parts db, path
+  end
+#  ldd_db = read_ldd_db
+end
+
+def list_parts(db, lxf)
+  parts = count_parts(lxf)
+  parts.each do |info, count|
+    puts "#{count} #{db.describe(info)}"
+  end
+end
+
+def count_parts(lxf)
+  parts = Hash.new(0)
+  Zip::File.open(lxf) do |zip|
+    zip.each do |entry|
+      if entry.name =~ /\.lxfml/i
+        xml = Nokogiri::XML(zip.get_input_stream(entry.name).read)
+        xml.xpath("/LXFML/Bricks/Brick").each do |brick|
+          info = {}
+          info[:brick_design_id] = brick["designID"]
+          info[:brick_item_nos] = brick["itemNos"]
+          part = brick.xpath("Part").first
+          info[:part_design_id] = part["designID"]
+          info[:part_materials] = part["materials"]
+          parts[info] += 1
+        end
+      end
+    end
+  end
+  parts
+end
+
+class DB
+  def describe(info)
+  end
+
+  def file_list
+    @file_list ||= FileList.new(f)
+  end
+
+  private
+
+  def f
+    @f ||= File.open("db.lif", "rb")
+  end
+end
+
+class FileList
+  def initialize(f)
+    @f = f
+  end
+
+  attr_reader :f
+
+  def names
+    file_list.keys
+  end
 end
 
 def read_ldd_db
